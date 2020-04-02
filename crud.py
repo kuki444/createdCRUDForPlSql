@@ -28,7 +28,7 @@ def main():
     for i in range(len(sys.argv)-1):
         src_paths.append(sys.argv[i+1])
     # result path
-    result_path = os.path.join(current_path, 'result.csv')
+    result_path = os.path.join(tmpdir.name, 'result.csv')
     result_excle_path = os.path.join(current_path, 'result.xlsx')
 
     # crudデータ作成 並列処理
@@ -48,6 +48,8 @@ def main():
             saveFile.flush()
     # result output Excel
     df = pd.read_csv(result_path, sep=',', header=None, names=['ファイル名','TABLE/VIEW名','c:insert','u:update','r:select','d:delete','t:type/rowType','c:createTable','d:dropTable'])
+    df['CRUD'] = df[['c:insert','u:update','r:select','d:delete']].apply(chenge_crud, axis=1)
+    df = df[['ファイル名','TABLE/VIEW名','CRUD','c:insert','u:update','r:select','d:delete','t:type/rowType','c:createTable','d:dropTable']]
     df.to_excel(result_excle_path, sheet_name='crud_data', index=False)
 
     #tmpデータ削除
@@ -55,6 +57,26 @@ def main():
 
     print('completed.')
     print('created CURD file' + result_path)
+
+def chenge_crud(crud):
+    str_crud = ''
+    if crud[0] > 0:
+        str_crud = str_crud + 'C'
+    else:
+        str_crud = str_crud + ' '
+    if crud[1] > 0:
+        str_crud = str_crud + 'R'
+    else:
+        str_crud = str_crud + ' '
+    if crud[2] > 0:
+        str_crud = str_crud + 'U'
+    else:
+        str_crud = str_crud + ' '
+    if crud[3] > 0:
+        str_crud = str_crud + 'D'
+    else:
+        str_crud = str_crud + ' '
+    return str_crud
 
 def createdcrud(arg_table_list_path, arg_tmpdir, arg_file_path):
     #tempパス
@@ -71,7 +93,6 @@ def createdcrud(arg_table_list_path, arg_tmpdir, arg_file_path):
     table_list_path = arg_table_list_path
     # crudlist (result)
     result_path = os.path.join(tmpdir.name, pg_name + '_result.txt')
-#    result_path = os.path.join('./', pg_name + '_result.txt')
 
     print('start created crud ...' + shiftjis_file_path)
 
@@ -168,9 +189,10 @@ def createdcrud(arg_table_list_path, arg_tmpdir, arg_file_path):
     result_lists.flush()
     result_lists.close()
 
-    df = pd.read_csv(result_path, sep=',', header=None, names=['pg','table','c:insert','u:update','r:select','d:delete','t:type/rowType','c:createTable','d:dropTable'])
+    df = pd.read_csv(result_path, sep=',', header=None, names=['pg','table','c','u','r','d','type','createTable','dropTable'])
     grouped = df.groupby(['pg','table'], as_index=False)
-    grouped.sum().sort_values(['pg','table']).to_csv(result_path, sep=',', index=False, header=False)
+    grouped = grouped.sum().sort_values(['pg','table'])
+    grouped.to_csv(result_path, sep=',', index=False, header=False)
 
     print('end created crud ...' + shiftjis_file_path)
 
