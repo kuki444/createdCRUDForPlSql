@@ -19,9 +19,10 @@ crud.py [-l テーブルリスト] [-o 出力ファイル名] [-t (excel|csv)] <
 デフォルト：excel
 
 ## Requirement
-
+...
 pip3 install pandas
 pip3 install openpyxl
+...
 
 ## Usage
 
@@ -42,7 +43,7 @@ crud.py -l ./listdir/table_list.txt ./testdir ./testdir2
 [MIT](https://github.com/tcnksm/tool/blob/master/LICENCE)
 
 ## TODO
-オプション設定
+オプション設定＜p＞
 テーブルリストの任意設定
 CRUDファイルの出力先設定
 テストケース作成
