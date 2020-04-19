@@ -42,9 +42,6 @@ crud.py -l ./listdir/table_list.txt ./testdir ./testdir2
 [MIT](https://github.com/tcnksm/tool/blob/master/LICENCE)
 
 ## TODO
-オプション設定
-テーブルリストの任意設定
-CRUDファイルの出力先設定
 テストケース作成
 サンプルファイルの作成
 関数化

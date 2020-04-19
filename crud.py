@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import argparse
 from concurrent import futures
 import codecs
 import tempfile
@@ -13,23 +14,18 @@ import openpyxl
 #pip3 install pandas
 #pip3 install openpyxl
 
-def main():
 
+def main(table_list_path, output_file_path, output_file_type, src_paths):
     # tempパス作成
     tmpdir = tempfile.TemporaryDirectory()
     # programe path
     pg_path = sys.argv[0]
     # current path
     current_path = os.path.dirname(pg_path)
-    # table list path
-    table_list_path = './table_list.txt'
-    # src path
-    src_paths = []
-    for i in range(len(sys.argv)-1):
-        src_paths.append(sys.argv[i+1])
-    # result path
+    # result temp path
     result_path = os.path.join(tmpdir.name, 'result.csv')
-    result_excle_path = os.path.join(current_path, 'result.xlsx')
+
+    print('Start Created CRUD File')
 
     # crudデータ作成 並列処理
     future_list = []
@@ -37,7 +33,7 @@ def main():
         for src_path in src_paths:
             for file_path in sorted(glob.glob(os.path.join(src_path,"*"))):
                 # createdcrud呼び出し
-                future = executor.submit(fn=createdcrud, arg_table_list_path=table_list_path, arg_tmpdir=tmpdir, arg_file_path=file_path)
+                future = executor.submit(fn=createdcrud, arg_table_list_path=table_list_path.name, arg_tmpdir=tmpdir, arg_file_path=file_path)
                 future_list.append(future)
             _ = futures.as_completed(fs=future_list)
     # join result files
@@ -46,17 +42,21 @@ def main():
             data = open(file_path, "rb").read()
             saveFile.write(data)
             saveFile.flush()
-    # result output Excel
+    # result output file
     df = pd.read_csv(result_path, sep=',', header=None, names=['ファイル名','TABLE/VIEW名','c:insert','u:update','r:select','d:delete','t:type/rowType','c:createTable','d:dropTable'])
     df['CRUD'] = df[['c:insert','u:update','r:select','d:delete']].apply(chenge_crud, axis=1)
     df = df[['ファイル名','TABLE/VIEW名','CRUD','c:insert','u:update','r:select','d:delete','t:type/rowType','c:createTable','d:dropTable']]
-    df.to_excel(result_excle_path, sheet_name='crud_data', index=False)
+    if output_file_type == 'excel':
+        df.to_excel(output_file_path.name, sheet_name='crud_data', index=False)
+    else:
+        df.to_csv(output_file_path.name, index=False)
 
     #tmpデータ削除
     tmpdir.cleanup()
 
-    print('completed.')
-    print('created CURD file' + result_path)
+    print('End Created CRUD File.')
+    print('Completed.')
+    print('Created CURD File' + output_file_path.name)
 
 def chenge_crud(crud):
     str_crud = ''
@@ -196,6 +196,45 @@ def createdcrud(arg_table_list_path, arg_tmpdir, arg_file_path):
 
     print('end created crud ...' + shiftjis_file_path)
 
+class FileTypeWithCheck(argparse.FileType):
+    def __call__(self, string):
+        if string and "w" in self._mode:
+            if os.path.exists(string):
+                print('File: exists. Is it OK to overwrite? [y/n] : ')
+                ans = sys.stdin.readline().rstrip()
+                ypttrn = re.compile(r'^y(es)?$', re.I)
+                m = ypttrn.match(ans)
+                if not m:
+                    sys.stderr.write("Stop file overwriting.\n")
+                    sys.exit(1)
+                    # raise ValueError('Stop file overwriting')
+            if os.path.dirname(string):
+                os.makedirs(os.path.dirname(string),
+                            exist_ok=True)
+        return super(FileTypeWithCheck, self).__call__(string)
+
+    def __repr__(self):
+        return super(FileTypeWithCheck, self).__repr__()
+
+def FileDirTypeWithExist(string):
+    print(string)
+    if os.path.exists(string) == False:
+        msg = "%r is not File or Dir" % string
+        raise argparse.ArgumentTypeError(msg)
+    return string
 
 if __name__ == '__main__':
-    main()
+    # オプション・引数チェック
+    # 1.ArgumentParserオブジェクトを生成する
+    parser = argparse.ArgumentParser(description='Created CRUD Script')
+    # 2.ArgumentParserオブジェクトにパラメータ(引数)を追加していく
+    parser.add_argument('-l', '--list', dest='table_list_path', help='テーブルリストファイル名', default=os.path.join(os.path.dirname(sys.argv[0]), 'table_list.txt'), type=FileTypeWithCheck('rb'))
+    parser.add_argument('-o', '--outfile', help='出力ファイル名', default=os.path.join(os.path.dirname(sys.argv[0]), 'result.xlsx'), type=FileTypeWithCheck('wb'))
+    parser.add_argument('-t', '--type', help='出力ファイルのタイプ設定（excel|csv）', choices=['excel','csv'], default='excel')
+    #parser.add_argument('inputFilePath', help='解析ファイルもしくは、解析ファイルのあるフォルダを設定する', action='append', nargs='+')
+    parser.add_argument('inputFilePaths', help='解析ファイルもしくは、解析ファイルのあるフォルダを設定する', nargs='+', type=FileDirTypeWithExist)
+    # 3.ArgumentParserオブジェクトを使って起動パラメータを解析する
+    args = parser.parse_args()
+
+    # main処理
+    main(args.table_list_path, args.outfile, args.type, args.inputFilePaths)
