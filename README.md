@@ -1,7 +1,7 @@
 Create CRUD Data for PL/SQL
 ====
 
-テーブルリストをからPL/SQLのDLL文（ファイル）のCRUD(C:inset,R:select,U:update,D:delete)をExcelファイルに作成する。
+テーブルリストからPL/SQL文（ファイル）のCRUD(C:inset,R:select,U:update,D:delete)をExcelファイルに作成する。
 
 ## Description
 crud.py [-l テーブルリスト] [-o 出力ファイル名] [-t (excel|csv)] <対象ファイル|対象フォルダ> ..
@@ -19,9 +19,10 @@ crud.py [-l テーブルリスト] [-o 出力ファイル名] [-t (excel|csv)] <
 デフォルト：excel
 
 ## Requirement
-
+...
 pip3 install pandas
 pip3 install openpyxl
+...
 
 ## Usage
 
