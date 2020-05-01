@@ -11,17 +11,10 @@ import sys
 import time
 import pandas as pd
 import openpyxl
-#pip3 install pandas
-#pip3 install openpyxl
-
 
 def main(table_list_path, output_file_path, output_file_type, src_paths):
     # tempパス作成
     tmpdir = tempfile.TemporaryDirectory()
-    # programe path
-    pg_path = sys.argv[0]
-    # current path
-    current_path = os.path.dirname(pg_path)
     # result temp path
     result_path = os.path.join(tmpdir.name, 'result.csv')
 
@@ -144,7 +137,7 @@ def createdcrud(arg_table_list_path, arg_tmpdir, arg_file_path):
         items = items + item.rstrip() + '|'
     items = items[:len(items)-1]
     # crud判定
-    saleVal = re.compile('(SELECT|INSERT|UPDATE|DELETE|TRUNCATE|MERGE|CREATE +TABLE|DROP +TABLE|JOIN).*?(' + items + ')( |\;|\n)',flags=re.IGNORECASE)
+    saleVal = re.compile('(SELECT|INSERT|UPDATE|DELETE|TRUNCATE|MERGE|CREATE +TABLE|DROP +TABLE|JOIN).*?(' + items + ')( |;|\n)',flags=re.IGNORECASE)
     findresult = saleVal.findall(findtext)
     for finditems in findresult:
         if finditems:
@@ -171,8 +164,8 @@ def createdcrud(arg_table_list_path, arg_tmpdir, arg_file_path):
                 item_curd = ',1,,,,,'
             print(file_name + ',' + finditems[1].upper() + ',' + item_curd, file=result_lists)
     # crud　type型判定
-    saleVal = re.compile('(' + items + ')(\%|\..+\%TYPE)',flags=re.IGNORECASE)
-    findresult = saleVal.findall(findtext)
+    saleValtype = re.compile('(' + items + ')(%|..+%TYPE)',flags=re.IGNORECASE)
+    findresult = saleValtype.findall(findtext)
     for finditems in findresult:
         if finditems:
             finditems = list(finditems)
