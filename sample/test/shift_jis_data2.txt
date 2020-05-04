@@ -1,0 +1,54 @@
+あいうえお
+かきくけこ
+
+-- テスト
+select * from tablename0001;
+
+create tables tablename0001;
+
+select 
+sss
+form tablename0001,tablename0002;
+
+select 
+sss
+form 
+tablename0002;
+
+ tablename0002%type;
+
+/* sssあｆｓだｆあああ */
+
+update tablename0001
+  set aasdf = ddd;
+
+update tablename0002
+  set aasdf = ddd;
+
+drop tables tablename0001;
+
+#テスト
+#tes
+
+test2
+
+/* sssあｆｓ
+  だｆあああ */
+
+asdf
+
+/* sssあｆｓ
+  だｆあああ */  
+
+sadfa   --test1
+sad     --test1
+
+--ssss--
+select *
+from tablename0001
+INNER JOIN  tablename0002 on col1 = col2
+
+select *
+from tablename0001
+where col1 (select col1 tablename0003 on col1 = col2)
+

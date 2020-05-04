@@ -90,14 +90,37 @@ def createdcrud(arg_table_list_path, arg_tmpdir, arg_file_path):
     print('start created crud ...' + shiftjis_file_path)
 
     # 文字コードを utf-8/改行コードLFに変換して保存
-    fin = codecs.open(shiftjis_file_path, "r", "shift_jis")
-    fout_utf = codecs.open(utf8_file_path, "w", "utf-8")
-    for row in fin:
-        fout_utf.write(row.replace(('\r\n'),'\n'))
-    fin.close()
-    fout_utf.close()
+    chengeCharacterCodeShiftJISToUTF8(shiftjis_file_path,utf8_file_path)
 
     # コメントを削除して保存
+    deleteComment(utf8_file_path, utf8_comment_off_path)
+
+    # リスト取得
+    with open(table_list_path, mode='r+t') as fin:
+        table_lists = fin.readlines()
+    # 判定用ファイル内容取得
+    with open(utf8_comment_off_path, mode='r+t') as fin:
+        find_text = fin.read()
+    
+    # 判定
+    # crud判定
+    items_crud = judgmentCrud(find_text,table_lists)
+    # crud判定結果出力
+    result_lists = open(result_path, mode='w')
+    for item_crud in items_crud:
+        print(file_name + ',' + item_crud[0] + ',' + item_crud[1], file=result_lists)
+    result_lists.close()
+
+    # 集計/並び替え
+    df = pd.read_csv(result_path, sep=',', header=None, names=['pg','table','c','u','r','d','type','createTable','dropTable'])
+    grouped = df.groupby(['pg','table'], as_index=False)
+    grouped = grouped.sum().sort_values(['pg','table'])
+    grouped.to_csv(result_path, sep=',', index=False, header=False)
+
+    print('end created crud ...' + shiftjis_file_path)
+
+# コメントを削除して保存
+def deleteComment(utf8_file_path, utf8_comment_off_path):
     comment_on = 0
     fout_comment_off = open(utf8_comment_off_path, mode='w')
     with open(utf8_file_path,"r+t") as fin:
@@ -124,19 +147,24 @@ def createdcrud(arg_table_list_path, arg_tmpdir, arg_file_path):
                     comment_on = 0
     fout_comment_off.close()
 
-    # リスト検索・判定
-    with open(table_list_path, mode='r+t') as fin:
-        table_lists = fin.readlines()
-    with open(utf8_comment_off_path, mode='r+t') as fin:
-        findtext = fin.read().replace('\n', ' ')
-    result_lists = open(result_path, mode='w')
-    # 判定
+def chengeCharacterCodeShiftJISToUTF8(shiftjis_file_path, utf8_file_path):
+    # 文字コードを utf-8/改行コードLFに変換して保存
+    fin = codecs.open(shiftjis_file_path, "r", "shift_jis")
+    fout_utf = codecs.open(utf8_file_path, "w", "utf-8")
+    for row in fin:
+        fout_utf.write(row.replace(('\r\n'),'\n'))
+    fin.close()
+    fout_utf.close()
+
+def judgmentCrud(text, tablelists):
+    # 検索用データから改行を除く
+    findtext = text.replace('\n', ' ')
     # テーブル・ビューリストをファイルから取込
     items = ''
-    for item in table_lists:
+    for item in tablelists:
         items = items + item.rstrip() + '|'
     items = items[:len(items)-1]
-    # crud判定
+    items_crud = list()
     saleVal = re.compile('(SELECT|INSERT|UPDATE|DELETE|TRUNCATE|MERGE|CREATE +TABLE|DROP +TABLE|JOIN).*?(' + items + ')( |;|\n)',flags=re.IGNORECASE)
     findresult = saleVal.findall(findtext)
     for finditems in findresult:
@@ -154,7 +182,7 @@ def createdcrud(arg_table_list_path, arg_tmpdir, arg_file_path):
                 item_curd = ',,,1,,,'
             if re.search('MERGE', finditems[0], re.IGNORECASE):
                 item_curd = '1,,,,,,'
-                print(file_name + ',' + finditems[1].upper() + ',' + item_curd, file=result_lists)
+                items_crud.append((finditems[1].upper(),item_curd))
                 item_curd = ',,1,,,,'
             if re.search('CREATE', finditems[0], re.IGNORECASE):
                 item_curd = ',,,,,1,'
@@ -162,7 +190,7 @@ def createdcrud(arg_table_list_path, arg_tmpdir, arg_file_path):
                 item_curd = ',,,,,,1'
             if re.search('JOIN', finditems[0], re.IGNORECASE):
                 item_curd = ',1,,,,,'
-            print(file_name + ',' + finditems[1].upper() + ',' + item_curd, file=result_lists)
+            items_crud.append((finditems[1].upper(),item_curd))
     # crud　type型判定
     saleValtype = re.compile('(' + items + ')(%|..+%TYPE)',flags=re.IGNORECASE)
     findresult = saleValtype.findall(findtext)
@@ -171,23 +199,10 @@ def createdcrud(arg_table_list_path, arg_tmpdir, arg_file_path):
             finditems = list(finditems)
             if re.search('%', finditems[1], re.IGNORECASE):
                 item_curd = ',,,,1,,'
-                print(file_name + ',' + finditems[0].upper() + ',' + item_curd, file=result_lists)
-    result_lists.close()
-    # 重複削除/集計/並び替え
-    with open(result_path, mode='r+t') as fin:
-        result_data = fin.readlines()
-    result_data = set(result_data)
-    result_lists = open(result_path, mode='w')
-    result_lists.writelines(result_data)
-    result_lists.flush()
-    result_lists.close()
-
-    df = pd.read_csv(result_path, sep=',', header=None, names=['pg','table','c','u','r','d','type','createTable','dropTable'])
-    grouped = df.groupby(['pg','table'], as_index=False)
-    grouped = grouped.sum().sort_values(['pg','table'])
-    grouped.to_csv(result_path, sep=',', index=False, header=False)
-
-    print('end created crud ...' + shiftjis_file_path)
+                items_crud.append((finditems[0].upper(),item_curd))
+    # 重複削除
+    items_crud = list(set(items_crud))
+    return items_crud
 
 class FileTypeWithCheck(argparse.FileType):
     def __call__(self, string):

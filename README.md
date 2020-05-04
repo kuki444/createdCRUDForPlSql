@@ -31,6 +31,10 @@ crud.py ./testdir ./testdir2
 
 crud.py -l ./listdir/table_list.txt ./testdir ./testdir2
 
+sample run
+
+ ./crud.py -l ./sample/table_list.txt ./sample/test ./sample/test2
+
 ## Install
 ```
  chmod +x crud.py
@@ -42,8 +46,10 @@ crud.py -l ./listdir/table_list.txt ./testdir ./testdir2
 
 [MIT](https://github.com/tcnksm/tool/blob/master/LICENCE)
 
+## test runing
+python3 -m unittest tests.test_crud
+
 ## TODO
 テストケース作成
-サンプルファイルの作成
-関数化
+class化
 インストール用Makefile作成
